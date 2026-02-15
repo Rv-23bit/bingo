@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>New Connections Bingo</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: #0f0f1a;
+    color: #fff;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .slide-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  .blob {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.4;
+    animation: float 8s ease-in-out infinite;
+    z-index: 0;
+  }
+  .blob-1 { width: 400px; height: 400px; background: #6c5ce7; top: -100px; left: -100px; }
+  .blob-2 { width: 350px; height: 350px; background: #fd79a8; bottom: -80px; right: -80px; animation-delay: -3s; }
+  .blob-3 { width: 300px; height: 300px; background: #00cec9; top: 50%; left: 60%; animation-delay: -5s; }
+
+  @keyframes float {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(30px, -30px) scale(1.05); }
+    66% { transform: translate(-20px, 20px) scale(0.95); }
+  }
+
+  /* Navigation */
+  .nav {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px 12px;
+    position: relative;
+    z-index: 10;
+    flex-wrap: wrap;
+  }
+  .nav button {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 50px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    backdrop-filter: blur(10px);
+    white-space: nowrap;
+  }
+  .nav button.active, .nav button:hover {
+    background: linear-gradient(135deg, #6c5ce7, #a855f7);
+    border-color: transparent;
+    transform: scale(1.05);
+    box-shadow: 0 4px 20px rgba(108,92,231,0.4);
+  }
+
+  /* Slides */
+  .slide {
+    display: none;
+    flex: 1;
+    padding: 16px 20px 32px;
+    position: relative;
+    z-index: 5;
+  }
+  .slide.active {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* SLIDE 0 — Title */
+  .title-slide { text-align: center; }
+  .emoji-ring {
+    font-size: clamp(28px, 5vw, 40px);
+    animation: spin 20s linear infinite;
+    margin-bottom: 10px;
+  }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  .title-slide h1 {
+    font-size: clamp(32px, 7vw, 72px);
+    font-weight: 800;
+    background: linear-gradient(135deg, #a78bfa, #f472b6, #fbbf24);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+  .title-slide .tagline {
+    font-size: clamp(14px, 2.5vw, 24px);
+    font-weight: 300;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 28px;
+  }
+  .title-slide .quick-stats {
+    display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;
+  }
+  .stat-pill {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    padding: 12px 22px;
+    border-radius: 16px;
+    backdrop-filter: blur(10px);
+  }
+  .stat-pill .num { font-size: 22px; font-weight: 700; color: #a78bfa; }
+  .stat-pill .lbl { font-size: 13px; color: rgba(255,255,255,0.6); }
+
+  /* SLIDE 1 — Rules */
+  .rules-slide { max-width: 900px; width: 100%; }
+  .rules-slide h2 {
+    font-size: clamp(24px, 4vw, 32px); font-weight: 700; text-align: center; margin-bottom: 24px;
+    background: linear-gradient(135deg, #6c5ce7, #a78bfa);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .rule-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+  }
+  .rule-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 18px;
+    padding: 22px 18px;
+    text-align: center;
+    transition: transform 0.3s, box-shadow 0.3s;
+    backdrop-filter: blur(10px);
+  }
+  .rule-card:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(108,92,231,0.25); }
+  .rule-card .icon { font-size: 32px; margin-bottom: 8px; }
+  .rule-card .step { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #a78bfa; margin-bottom: 6px; }
+  .rule-card p { font-size: 14px; color: rgba(255,255,255,0.8); line-height: 1.5; }
+
+  /* SLIDE 2 — Bingo Card */
+  .bingo-slide { max-width: 620px; width: 100%; }
+  .bingo-slide h2 {
+    font-size: clamp(20px, 3.5vw, 26px); font-weight: 700; text-align: center; margin-bottom: 6px;
+    background: linear-gradient(135deg, #f472b6, #fbbf24);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .bingo-subtitle { text-align: center; color: rgba(255,255,255,0.5); font-size: 13px; margin-bottom: 14px; }
+  .bingo-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: clamp(3px, 1vw, 6px);
+  }
+  .bingo-cell {
+    aspect-ratio: 1;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: clamp(8px, 2vw, 14px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: clamp(3px, 1vw, 6px);
+    cursor: pointer;
+    transition: all 0.25s;
+    user-select: none;
+  }
+  .bingo-cell:hover { background: rgba(255,255,255,0.1); transform: scale(1.04); }
+  .bingo-cell.marked {
+    background: linear-gradient(135deg, rgba(108,92,231,0.4), rgba(168,85,247,0.4));
+    border-color: #a78bfa;
+    box-shadow: 0 0 16px rgba(168,85,247,0.3);
+  }
+  .bingo-cell .cell-emoji { font-size: clamp(16px, 3.5vw, 24px); margin-bottom: 2px; }
+  .bingo-cell .cell-text { font-size: clamp(8px, 1.6vw, 11px); color: rgba(255,255,255,0.8); line-height: 1.25; }
+  .shuffle-btn {
+    display: block; margin: 14px auto 0;
+    background: linear-gradient(135deg, #6c5ce7, #a855f7);
+    border: none; color: #fff; padding: 10px 28px;
+    border-radius: 50px; font-family: 'Outfit', sans-serif;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .shuffle-btn:hover { transform: scale(1.05); box-shadow: 0 4px 20px rgba(108,92,231,0.5); }
+
+  .win-banner {
+    display: none;
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7); z-index: 100;
+    align-items: center; justify-content: center;
+    backdrop-filter: blur(6px);
+    padding: 20px;
+  }
+  .win-banner.show { display: flex; }
+  .win-box {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border: 2px solid #a78bfa;
+    border-radius: 24px; padding: 40px; text-align: center;
+    animation: popIn 0.4s ease;
+    max-width: 400px; width: 100%;
+  }
+  @keyframes popIn { from { transform: scale(0.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .win-box h2 { font-size: clamp(28px, 6vw, 42px); margin-bottom: 10px; }
+  .win-box p { color: rgba(255,255,255,0.7); margin-bottom: 20px; font-size: 15px; }
+  .win-box button {
+    background: #a78bfa; border: none; color: #fff; padding: 10px 30px;
+    border-radius: 50px; font-family: 'Outfit'; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+
+  /* SLIDE 3 — Tips */
+  .tips-slide { max-width: 860px; width: 100%; }
+  .tips-slide h2 {
+    font-size: clamp(24px, 4vw, 32px); font-weight: 700; text-align: center; margin-bottom: 24px;
+    background: linear-gradient(135deg, #00cec9, #6c5ce7);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .tip-row { display: flex; gap: 14px; margin-bottom: 14px; align-items: flex-start; }
+  .tip-icon {
+    flex-shrink: 0; width: 44px; height: 44px; border-radius: 12px;
+    background: rgba(108,92,231,0.2); display: flex; align-items: center; justify-content: center; font-size: 22px;
+  }
+  .tip-content h3 { font-size: 16px; font-weight: 600; margin-bottom: 3px; }
+  .tip-content p { font-size: 13px; color: rgba(255,255,255,0.65); line-height: 1.5; }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 600px) {
+    .nav { gap: 6px; padding: 12px 8px; }
+    .nav button { padding: 8px 14px; font-size: 12px; }
+    .slide { padding: 12px 14px 24px; }
+    .rule-cards { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .rule-card { padding: 16px 12px; }
+    .rule-card .icon { font-size: 26px; }
+    .rule-card p { font-size: 12px; }
+    .stat-pill { padding: 10px 16px; }
+    .stat-pill .num { font-size: 18px; }
+    .stat-pill .lbl { font-size: 11px; }
+    .tip-row { gap: 10px; }
+    .tip-icon { width: 38px; height: 38px; font-size: 18px; }
+    .tip-content h3 { font-size: 14px; }
+    .tip-content p { font-size: 12px; }
+    .shuffle-btn { padding: 9px 22px; font-size: 13px; }
+  }
+
+  @media (max-width: 380px) {
+    .nav button { padding: 7px 10px; font-size: 11px; }
+    .bingo-grid { gap: 2px; }
+    .bingo-cell { border-radius: 6px; padding: 2px; }
+    .bingo-cell .cell-emoji { font-size: 14px; }
+    .bingo-cell .cell-text { font-size: 7px; }
+    .rule-cards { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="slide-container">
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+
+  <nav class="nav">
+    <button class="active" onclick="goSlide(0)">🎉 Intro</button>
+    <button onclick="goSlide(1)">📋 Rules</button>
+    <button onclick="goSlide(2)">🎯 Bingo Card</button>
+    <button onclick="goSlide(3)">💡 Pro Tips</button>
+  </nav>
+
+  <!-- SLIDE 0 — TITLE -->
+  <section class="slide title-slide active" id="s0">
+    <div class="emoji-ring">🎲🤝🎯🌟✨</div>
+    <h1>New Connections<br>Bingo</h1>
+    <p class="tagline">Break the ice. Find your people. Win the game.</p>
+    <div class="quick-stats">
+      <div class="stat-pill"><div class="num">15–30</div><div class="lbl">minutes</div></div>
+      <div class="stat-pill"><div class="num">Any</div><div class="lbl">group size</div></div>
+      <div class="stat-pill"><div class="num">📱</div><div class="lbl">phone only</div></div>
+    </div>
+  </section>
+
+  <!-- SLIDE 1 — RULES -->
+  <section class="slide rules-slide" id="s1">
+    <h2>How It Works</h2>
+    <div class="rule-cards">
+      <div class="rule-card">
+        <div class="icon">📱</div>
+        <div class="step">Step 1</div>
+        <p>Open the digital bingo card on your phone — no paper needed!</p>
+      </div>
+      <div class="rule-card">
+        <div class="icon">🗣️</div>
+        <div class="step">Step 2</div>
+        <p>Walk around and talk to people. Find someone who matches a square.</p>
+      </div>
+      <div class="rule-card">
+        <div class="icon">✅</div>
+        <div class="step">Step 3</div>
+        <p>Tap to mark the square. You can't use the same person twice!</p>
+      </div>
+      <div class="rule-card">
+        <div class="icon">🏆</div>
+        <div class="step">Step 4</div>
+        <p>First to get <strong>5 in a row</strong> (horizontal, vertical, or diagonal) shouts <strong>"BINGO!"</strong></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 2 — BINGO CARD -->
+  <section class="slide bingo-slide" id="s2">
+    <h2>🎯 Your Bingo Card</h2>
+    <p class="bingo-subtitle">Click a square when you find a match · Shuffle for a new card</p>
+    <div class="bingo-grid" id="bingoGrid"></div>
+    <button class="shuffle-btn" onclick="shuffleCard()">🔀 Shuffle Card</button>
+  </section>
+
+  <!-- SLIDE 3 — TIPS -->
+  <section class="slide tips-slide" id="s3">
+    <h2>Facilitator Pro Tips</h2>
+    <div class="tip-row"><div class="tip-icon">⏱️</div><div class="tip-content"><h3>Set a Timer</h3><p>Project a 15-minute countdown. If nobody wins, switch to "most squares filled" for the win.</p></div></div>
+    <div class="tip-row"><div class="tip-icon">🎵</div><div class="tip-content"><h3>Play Background Music</h3><p>Upbeat lo-fi or pop keeps energy high and reduces awkward silences.</p></div></div>
+    <div class="tip-row"><div class="tip-icon">🎁</div><div class="tip-content"><h3>Have Prizes Ready</h3><p>Even small rewards (candy, stickers, bragging rights) boost engagement massively.</p></div></div>
+    <div class="tip-row"><div class="tip-icon">🔄</div><div class="tip-content"><h3>Shuffle the Cards</h3><p>Everyone gets a randomized card so the same person can't solve all boards at once.</p></div></div>
+    <div class="tip-row"><div class="tip-icon">📣</div><div class="tip-content"><h3>Demo First</h3><p>Walk up to someone live and demo a square check-off — modeling removes hesitation.</p></div></div>
+    <div class="tip-row"><div class="tip-icon">🧩</div><div class="tip-content"><h3>Backup Plan</h3><p>If the group is small (&lt; 12), switch to a 4×4 grid or allow two squares per person.</p></div></div>
+  </section>
+</div>
+
+<!-- WIN BANNER -->
+<div class="win-banner" id="winBanner">
+  <div class="win-box">
+    <h2>🎉 BINGO! 🎉</h2>
+    <p>You got five in a row! Time to shout it out!</p>
+    <button onclick="document.getElementById('winBanner').classList.remove('show')">Close</button>
+  </div>
+</div>
+
+<script>
+const ALL_PROMPTS = [
+  {e:"🐾", t:"Has a pet"},
+  {e:"🎸", t:"Plays an instrument"},
+  {e:"🌍", t:"Visited 3+ countries"},
+  {e:"☕", t:"Prefers tea over coffee"},
+  {e:"🏃", t:"Ran a 5K or more"},
+  {e:"📚", t:"Read 5+ books this year"},
+  {e:"🍳", t:"Loves cooking"},
+  {e:"🎮", t:"Plays video games"},
+  {e:"🗣️", t:"Speaks 2+ languages"},
+  {e:"🌱", t:"Has a houseplant"},
+  {e:"🎬", t:"Loves horror movies"},
+  {e:"🎨", t:"Has an artistic hobby"},
+  {e:"🏔️", t:"Has gone hiking recently"},
+  {e:"🎤", t:"Sings in the shower"},
+  {e:"🍕", t:"Pineapple on pizza? Yes!"},
+  {e:"📷", t:"Posts on social media daily"},
+  {e:"✈️", t:"Flew somewhere this year"},
+  {e:"🧘", t:"Practices meditation"},
+  {e:"🎶", t:"Went to a live concert"},
+  {e:"👟", t:"Owns 10+ pairs of shoes"},
+  {e:"🌙", t:"Is a night owl"},
+  {e:"🐶", t:"Has a dog"},
+  {e:"📺", t:"Binge-watched a show this week"},
+  {e:"🎂", t:"Birthday in the same month"},
+  {e:"💻", t:"Knows how to code"},
+  {e:"🏊", t:"Can swim"},
+  {e:"🎧", t:"Listens to podcasts"},
+  {e:"🚴", t:"Rides a bicycle"},
+  {e:"🧁", t:"Baked something recently"},
+  {e:"🤓", t:"Wears glasses or contacts"},
+  {e:"🎭", t:"Was in a school play"},
+  {e:"⚽", t:"Plays a team sport"},
+  {e:"🛹", t:"Has tried skateboarding"},
+  {e:"📝", t:"Keeps a journal"},
+  {e:"🌊", t:"Been to the beach this year"},
+  {e:"🎯", t:"Has a hidden talent"},
+  {e:"🧳", t:"Moved to a new city"},
+  {e:"🐱", t:"Has a cat"},
+  {e:"🍜", t:"Loves trying new cuisines"},
+  {e:"🪴", t:"Has a garden"},
+];
+
+let marked = new Set();
+
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function shuffleCard() {
+  marked = new Set();
+  const grid = document.getElementById('bingoGrid');
+  grid.innerHTML = '';
+  const picks = shuffle([...ALL_PROMPTS]).slice(0, 25);
+
+  picks.forEach((p, i) => {
+    const c = document.createElement('div');
+    c.className = 'bingo-cell';
+    c.innerHTML = `<span class="cell-emoji">${p.e}</span><span class="cell-text">${p.t}</span>`;
+    c.addEventListener('click', () => {
+      c.classList.toggle('marked');
+      if (c.classList.contains('marked')) marked.add(i); else marked.delete(i);
+      checkWin();
+    });
+    grid.appendChild(c);
+  });
+}
+
+function checkWin() {
+  const lines = [];
+  for (let r = 0; r < 5; r++) lines.push([0,1,2,3,4].map(c => r*5+c));
+  for (let c = 0; c < 5; c++) lines.push([0,1,2,3,4].map(r => r*5+c));
+  lines.push([0,6,12,18,24]);
+  lines.push([4,8,12,16,20]);
+  for (const l of lines) {
+    if (l.every(i => marked.has(i))) {
+      document.getElementById('winBanner').classList.add('show');
+      return;
+    }
+  }
+}
+
+function goSlide(n) {
+  document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('s'+n).classList.add('active');
+  document.querySelectorAll('.nav button')[n].classList.add('active');
+}
+
+shuffleCard();
+</script>
+</body>
+</html>
